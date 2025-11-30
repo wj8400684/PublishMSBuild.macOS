@@ -51,6 +51,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
     
     steps:
     - name: Download artifact
@@ -65,12 +67,12 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
     - name: Publish to NuGet.org
-      run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-      if: ${{ secrets.NUGET_API_KEY != '' }}
+      if: ${{ env.NUGET_API_KEY != '' }}
+      run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ env.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
       
     - name: Publish to GitHub Packages
+      if: ${{ env.NUGET_API_KEY == '' }}
       run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
-      if: ${{ secrets.NUGET_API_KEY == '' }}
 
   publish-local:
     needs: build
