@@ -1,0 +1,96 @@
+<Project>
+  <Target Name="CreateMacOSBundle"
+          AfterTargets="Publish"
+          Condition="'$(MacOSBundleEnabled)'=='true' and '$(PublishDir)'!='' and $([System.String]::Copy('$(MacOSBundleRID)').StartsWith('osx'))">
+
+    <Message Text="[macos-bundle] Publish output: $(PublishDir)" Importance="High" />
+    <Error Condition="!Exists('$(PublishDir)')"
+           Text="[macos-bundle] Publish directory '$(PublishDir)' does not exist. Run 'dotnet publish' with a macOS RID." />
+
+    <PropertyGroup>
+      <_MacOSBundleShortRID>$([System.String]::Copy('$(MacOSBundleRID)'))</_MacOSBundleShortRID>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(MacOSBundleRoot)" Condition="Exists('$(MacOSBundleRoot)')" />
+    <Delete Files="$(MacOSArchivePath)" Condition="Exists('$(MacOSArchivePath)')" ContinueOnError="true" />
+
+    <MakeDir Directories="$(MacOSBundleMacOS)" />
+    <MakeDir Directories="$(MacOSBundleResources)" />
+
+
+
+    <!-- 复制发布文件，排除调试符号 -->
+    <ItemGroup>
+      <_PublishFiles Include="$(PublishDir)**\*.*" Exclude="$(PublishDir)**\*.dSYM\**" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_PublishFiles)"
+          DestinationFiles="@(_PublishFiles->'$(MacOSBundleMacOS)\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="false"
+          OverwriteReadOnlyFiles="true" />
+
+
+
+    <Copy Condition="Exists('$(MacOSIconPath)')"
+          SourceFiles="$(MacOSIconPath)"
+          DestinationFiles="$(MacOSBundleResources)/$(MacOSIconName).icns" />
+
+    <ItemGroup>
+      <_InfoPlistLines Include="&lt;?xml version='1.0' encoding='UTF-8'?&gt;" />
+      <_InfoPlistLines Include="&lt;!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' 'http://www.apple.com/DTDs/PropertyList-1.0.dtd'&gt;" />
+      <_InfoPlistLines Include="&lt;plist version='1.0'&gt;" />
+      <_InfoPlistLines Include="&lt;dict&gt;" />
+      <_InfoPlistLines Include="    &lt;key&gt;CFBundleExecutable&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;string&gt;$(MacOSAppExecutable)&lt;/string&gt;" />
+      <_InfoPlistLines Include="    &lt;key&gt;CFBundleIdentifier&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;string&gt;$(MacOSBundleIdentifier)&lt;/string&gt;" />
+      <_InfoPlistLines Include="    &lt;key&gt;CFBundleName&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;string&gt;$(MacOSAppName)&lt;/string&gt;" />
+      <_InfoPlistLines Include="    &lt;key&gt;CFBundleDisplayName&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;string&gt;$(MacOSAppName)&lt;/string&gt;" />
+      <_InfoPlistLines Include="    &lt;key&gt;CFBundleVersion&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;string&gt;$(MacOSAppVersion)&lt;/string&gt;" />
+      <_InfoPlistLines Include="    &lt;key&gt;CFBundleShortVersionString&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;string&gt;$(MacOSAppVersion)&lt;/string&gt;" />
+      <_InfoPlistLines Include="    &lt;key&gt;CFBundlePackageType&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;string&gt;APPL&lt;/string&gt;" />
+      <_InfoPlistLines Include="    &lt;key&gt;LSMinimumSystemVersion&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;string&gt;$(MacOSBundleLSMinimumVersion)&lt;/string&gt;" />
+      <_InfoPlistLines Include="    &lt;key&gt;NSHighResolutionCapable&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;true/&gt;" />
+    </ItemGroup>
+
+    <ItemGroup Condition="Exists('$(MacOSIconPath)')">
+      <_InfoPlistLines Include="    &lt;key&gt;CFBundleIconFile&lt;/key&gt;" />
+      <_InfoPlistLines Include="    &lt;string&gt;$(MacOSIconName)&lt;/string&gt;" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <_InfoPlistLines Include="&lt;/dict&gt;" />
+      <_InfoPlistLines Include="&lt;/plist&gt;" />
+    </ItemGroup>
+
+
+    <WriteLinesToFile File="$(MacOSBundleContents)/Info.plist"
+                      Lines="@(_InfoPlistLines)"
+                      Overwrite="true"
+                      Encoding="UTF-8" />
+
+    <Exec Command="chmod +x &quot;$(MacOSBundleMacOS)/$(MacOSAppExecutable)&quot;" />
+
+    <!-- 代码签名 -->
+    <Exec Command="codesign --force --deep --sign - &quot;$(MacOSBundleRoot)&quot;" />
+
+
+    <Exec Condition="'$(MacOSBundleArchiveEnabled)'=='true'"
+          Command="tar -czf &quot;$(MacOSArchivePath)&quot; -C &quot;$(ProjectDir)&quot; &quot;$(MacOSAppName).app&quot;" />
+
+    <Exec Condition="'$(MacOSOpenFinder)'=='true'"
+          Command="open &quot;$(ProjectDir)&quot;" ContinueOnError="true" />
+
+    <Message Text="[macos-bundle] Created bundle: $(MacOSBundleRoot)" Importance="High" />
+    <Message Condition="'$(MacOSBundleArchiveEnabled)'=='true'"
+             Text="[macos-bundle] Archive: $(MacOSArchivePath)" Importance="High" />
+  </Target>
+</Project>

@@ -1,0 +1,37 @@
+<Project>
+  <PropertyGroup>
+    <MacOSBundleEnabled Condition="'$(MacOSBundleEnabled)'==''">true</MacOSBundleEnabled>
+    <MacOSBundleIdentifier Condition="'$(MacOSBundleIdentifier)'==''">com.avalonia.protoparse</MacOSBundleIdentifier>
+    <MacOSAppName Condition="'$(MacOSAppName)'==''">$(AssemblyName)</MacOSAppName>
+    <MacOSAppExecutable Condition="'$(MacOSAppExecutable)'==''">$(AssemblyName)</MacOSAppExecutable>
+    <MacOSAppVersion Condition="'$(MacOSAppVersion)'=='' and '$(Version)'!=''">$(Version)</MacOSAppVersion>
+    <MacOSAppVersion Condition="'$(MacOSAppVersion)'==''">1.0.0</MacOSAppVersion>
+    <MacOSIconName Condition="'$(MacOSIconName)'==''">AppIcon</MacOSIconName>
+    <MacOSBundleRuntime Condition="'$(MacOSBundleRuntime)'==''">osx-arm64</MacOSBundleRuntime>
+    <MacOSOpenFinder Condition="'$(MacOSOpenFinder)'==''">false</MacOSOpenFinder>
+    <MacOSBundleArchiveEnabled Condition="'$(MacOSBundleArchiveEnabled)'==''">true</MacOSBundleArchiveEnabled>
+    <MacOSBundleLSMinimumVersion Condition="'$(MacOSBundleLSMinimumVersion)'==''">10.15</MacOSBundleLSMinimumVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MacOSBundleRID Condition="'$(RuntimeIdentifier)'!=''">$(RuntimeIdentifier)</MacOSBundleRID>
+    <MacOSBundleRID Condition="'$(MacOSBundleRID)'==''">$(MacOSBundleRuntime)</MacOSBundleRID>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MacOSIconPath)'==''">
+    <_MacOSIconCandidate Include="$(ProjectDir)Assets\*.icns" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(MacOSIconPath)'==''">
+    <_MacOSIconCandidates>@(_MacOSIconCandidate)</_MacOSIconCandidates>
+    <MacOSIconPath Condition="'$(_MacOSIconCandidates)'!=''">$([System.String]::Copy('$(_MacOSIconCandidates)').Split(';')[0])</MacOSIconPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MacOSBundleRoot Condition="'$(MacOSBundleRoot)'==''">$([System.IO.Path]::GetFullPath('$(ProjectDir)$(MacOSAppName).app'))</MacOSBundleRoot>
+    <MacOSBundleContents Condition="'$(MacOSBundleContents)'==''">$(MacOSBundleRoot)/Contents</MacOSBundleContents>
+    <MacOSBundleMacOS Condition="'$(MacOSBundleMacOS)'==''">$(MacOSBundleContents)/MacOS</MacOSBundleMacOS>
+    <MacOSBundleResources Condition="'$(MacOSBundleResources)'==''">$(MacOSBundleContents)/Resources</MacOSBundleResources>
+    <MacOSArchivePath Condition="'$(MacOSArchivePath)'==''">$([System.IO.Path]::GetFullPath('$(ProjectDir)$(MacOSAppName)-$(MacOSBundleRID).tar.gz'))</MacOSArchivePath>
+  </PropertyGroup>
+</Project>

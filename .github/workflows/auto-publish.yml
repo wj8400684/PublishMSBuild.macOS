@@ -1,0 +1,48 @@
+name: Auto Publish on Build Success
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'src/PublishMSBuild.macOS/**'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore
+      run: dotnet restore src/PublishMSBuild.macOS/PublishMSBuild.macOS.csproj
+      
+    - name: Build
+      run: dotnet build src/PublishMSBuild.macOS/PublishMSBuild.macOS.csproj -c Release --no-restore
+      
+    - name: Pack
+      run: dotnet pack src/PublishMSBuild.macOS/PublishMSBuild.macOS.csproj -c Release --no-build -o ./nupkgs
+      
+    - name: Publish to local-packages
+      run: |
+        mkdir -p local-packages
+        cp ./nupkgs/*.nupkg local-packages/
+        
+    - name: Commit and push
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add local-packages/*.nupkg
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "chore: auto-publish NuGet package [skip ci]"
+          git push
+        fi

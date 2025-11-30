@@ -1,0 +1,101 @@
+name: Build and Publish NuGet
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'src/PublishMSBuild.macOS/**'
+      - '.github/workflows/nuget-publish.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'src/PublishMSBuild.macOS/**'
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  PROJECT_PATH: 'src/PublishMSBuild.macOS/PublishMSBuild.macOS.csproj'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.PROJECT_PATH }}
+      
+    - name: Build
+      run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
+      
+    - name: Pack
+      run: dotnet pack ${{ env.PROJECT_PATH }} -c Release --no-build -o ./nupkgs
+      
+    - name: Upload NuGet package artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-package
+        path: ./nupkgs/*.nupkg
+        retention-days: 7
+
+  publish-nuget:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-package
+        path: ./nupkgs
+        
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Publish to NuGet.org
+      run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      if: secrets.NUGET_API_KEY != ''
+      
+    - name: Publish to GitHub Packages
+      run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
+      if: secrets.NUGET_API_KEY == ''
+
+  publish-local:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-package
+        path: ./nupkgs
+        
+    - name: Copy to local-packages
+      run: |
+        mkdir -p local-packages
+        cp ./nupkgs/*.nupkg local-packages/
+        
+    - name: Commit and push local packages
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add local-packages/*.nupkg
+        git diff --staged --quiet || git commit -m "chore: update local NuGet packages [skip ci]"
+        git push

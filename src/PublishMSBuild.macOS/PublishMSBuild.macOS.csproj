@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <PackageId>PublishMSBuild.macOS</PackageId>
+    <Version>1.0.0-preview</Version>
+    <Authors>AutoPublish</Authors>
+    <Company>AutoPublish</Company>
+    <PackageDescription>MSBuild targets that create a macOS .app bundle and archive automatically after publish.</PackageDescription>
+    <PackageProjectUrl>https://example.com</PackageProjectUrl>
+    <RepositoryUrl>https://example.com/PublishMSBuild.macOS</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="build/PublishMSBuild.macOS.props" Pack="true" PackagePath="buildTransitive/PublishMSBuild.macOS.props" />
+    <None Include="build/PublishMSBuild.macOS.targets" Pack="true" PackagePath="buildTransitive/PublishMSBuild.macOS.targets" />
+  </ItemGroup>
+</Project>
