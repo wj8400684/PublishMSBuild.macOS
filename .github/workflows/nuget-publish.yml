@@ -17,6 +17,8 @@ on:
 env:
   DOTNET_VERSION: '8.0.x'
   PROJECT_PATH: 'src/PublishMSBuild.macOS/PublishMSBuild.macOS.csproj'
+permissions:
+  contents: write
 
 jobs:
   build:
