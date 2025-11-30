@@ -5,7 +5,9 @@ obj/
 *.app/
 *.tar.gz
 nupkgs/
-local-packages/
+local-packages/*
+!local-packages/
+!local-packages/*.nupkg
 
 # IDE
 .idea/
